@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PDF / Ảnh → Word Equations · v7</title>
+<title>PDF / Ảnh → Word Equations · v9</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -32,20 +32,15 @@ main{flex:1;display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 67p
 .baseurl-badge{font-size:.65rem;padding:2px 7px;border-radius:10px;border:1px solid rgba(112,170,238,.35);background:rgba(112,170,238,.1);color:var(--info);white-space:nowrap;}
 .reset-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:2px 6px;border-radius:4px;transition:all .2s;}
 .reset-btn:hover{color:var(--accent2);background:rgba(232,133,74,.1)}
-
-/* ── MODE TABS ── */
 .mode-tabs{display:flex;gap:0;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);overflow:hidden;margin-bottom:0;}
 .mode-tab{flex:1;padding:9px 6px;text-align:center;cursor:pointer;font-size:.8rem;font-weight:500;color:var(--muted);background:transparent;border:none;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px;}
 .mode-tab:hover{color:var(--text)}
 .mode-tab.active{background:linear-gradient(135deg,rgba(232,133,74,.25),rgba(200,80,192,.2));color:var(--accent2);border-bottom:2px solid var(--accent);}
-
 .drop{border:2px dashed var(--border2);border-radius:var(--r);padding:1.5rem 1rem;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
 .drop:hover,.drop.over{border-color:var(--accent);background:var(--glow)}
 .drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .drop-icon{font-size:1.6rem;margin-bottom:.35rem}
 .drop p{font-size:.82rem;color:var(--muted)}.drop strong{color:var(--text)}
-
-/* ── IMAGE THUMBNAILS GRID ── */
 .img-grid{display:none;flex-wrap:wrap;gap:8px;margin-top:6px;}
 .img-grid.show{display:flex}
 .img-thumb{position:relative;width:80px;height:80px;border-radius:6px;overflow:hidden;border:1px solid var(--border2);flex-shrink:0;}
@@ -56,7 +51,6 @@ main{flex:1;display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 67p
 .img-add:hover{border-color:var(--accent);color:var(--accent2);background:var(--glow)}
 .img-add input{display:none}
 .img-count{font-size:.68rem;color:var(--muted);margin-top:4px}
-
 .chip{display:none;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:10px 12px;gap:10px;align-items:center;}
 .chip.show{display:flex}
 .chip-name{flex:1;min-width:0;font-size:.83rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -99,11 +93,8 @@ main{flex:1;display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 67p
 .mtag{display:inline-block;background:rgba(94,207,136,.1);border:1px solid rgba(94,207,136,.3);border-radius:4px;padding:0 5px;font-family:var(--mono);font-size:.78rem;color:var(--ok);margin:0 1px;}
 .raw-box{background:#0a0a12;border:1px solid rgba(112,170,238,.2);border-radius:var(--r2);padding:10px 12px;font-family:var(--mono);font-size:.7rem;line-height:1.65;color:#7090b0;max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin-top:8px;}
 .raw-box .raw-label{color:var(--info);font-weight:600;margin-bottom:4px;display:block;}
-
-/* ── IMAGE PREVIEW IN CARD ── */
 .img-preview-wrap{margin-bottom:10px;border-radius:6px;overflow:hidden;border:1px solid var(--border2);max-height:200px;display:flex;align-items:center;justify-content:center;background:#0a0a0f;}
 .img-preview-wrap img{max-width:100%;max-height:200px;object-fit:contain;}
-
 .dl-area{display:none;flex-direction:column;gap:8px}
 .dl-area.show{display:flex}
 .dl-btn{padding:11px 16px;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);color:var(--text);font-size:.83rem;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .2s;width:fit-content;}
@@ -116,11 +107,8 @@ main{flex:1;display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 67p
 .lm.ok{color:var(--ok)}.lm.warn{color:var(--warn)}.lm.err{color:var(--err)}.lm.info{color:var(--info)}
 .spin{width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;animation:rot .65s linear infinite;flex-shrink:0;}
 @keyframes rot{to{transform:rotate(360deg)}}
-
-/* img mode info box */
 .mode-info{background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:9px 12px;font-size:.74rem;color:var(--muted);line-height:1.8;}
 .mode-info strong{color:var(--text)}
-
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 @media(max-width:680px){main{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:auto}.left{border-right:none;border-bottom:1px solid var(--border)}}
 </style>
@@ -128,7 +116,7 @@ main{flex:1;display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 67p
 <body>
 <header>
   <div class="logo">✦</div>
-  <div><h1>PDF / Ảnh → Word Converter</h1><p>OCR Toán học · Word Equations (OMML) v7 · PDF + Ảnh</p></div>
+  <div><h1>PDF / Ảnh → Word Converter</h1><p>OCR Toán học · Word Equations (OMML) v10 · PDF + Ảnh</p></div>
   <span class="hbadge">Claude AI</span>
 </header>
 <main>
@@ -162,7 +150,6 @@ main{flex:1;display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 67p
     </select>
   </div>
 
-  <!-- ── MODE SELECTOR ── -->
   <div>
     <p class="slabel">📁 Chế độ đầu vào</p>
     <div class="mode-tabs">
@@ -171,7 +158,6 @@ main{flex:1;display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 67p
     </div>
   </div>
 
-  <!-- ── PDF MODE ── -->
   <div id="pdfSection">
     <p class="slabel">📂 File PDF</p>
     <div class="drop" id="dropZone">
@@ -187,7 +173,6 @@ main{flex:1;display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 67p
     </div>
   </div>
 
-  <!-- ── IMAGE MODE ── -->
   <div id="imgSection" style="display:none">
     <p class="slabel">🖼️ Ảnh tài liệu</p>
     <div class="mode-info" style="margin-bottom:8px">
@@ -222,7 +207,7 @@ main{flex:1;display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 67p
     </div>
   </div>
 
-</div><!-- end left-spacer -->
+</div>
 <div class="cvt-btn-wrap">
   <button class="cvt-btn" id="cvtBtn" disabled>
     <span id="cvtIco">✦</span>
@@ -254,11 +239,10 @@ main{flex:1;display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 67p
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const DEFAULT_BASE_URL = 'https://api.anthropic.com';
 let pdfFile = null, pdfPageCount = 0, resultPages = [];
-let imageFiles = []; // [{file, dataUrl, b64, mime}]
-let currentMode = 'pdf'; // 'pdf' | 'img'
+let imageFiles = [];
+let currentMode = 'pdf';
 const $ = id => document.getElementById(id);
 
-// ── MODE SWITCHING ────────────────────────────────────────────────────────────
 function switchMode(mode) {
   currentMode = mode;
   $('tabPdf').classList.toggle('active', mode === 'pdf');
@@ -269,7 +253,6 @@ function switchMode(mode) {
   checkReady();
 }
 
-// ── localStorage ──────────────────────────────────────────────────────────────
 const LS = {
   save: (k,v) => { try { localStorage.setItem('pdfword_'+k, v); } catch{} },
   load: (k, def='') => { try { return localStorage.getItem('pdfword_'+k) ?? def; } catch{ return def; } }
@@ -400,7 +383,6 @@ function renderImgGrid() {
     thumb.querySelector('.del-x').onclick = ()=>removeImage(i);
     grid.appendChild(thumb);
   });
-  // Add button
   const addBtn = document.createElement('label');
   addBtn.className = 'img-add';
   addBtn.title = 'Thêm ảnh';
@@ -574,7 +556,11 @@ class OmmlParser {
       const sym = SYM_MAP[cmd];
       if (sym === null) {
         const inner = this.parseGroupOmml();
-        const accMap = {'\\hat':'&#x302;','\\widehat':'&#x302;','\\bar':'&#x304;','\\overline':'&#x305;','\\vec':'&#x20D7;','\\overrightarrow':'&#x20D7;','\\tilde':'&#x303;','\\widetilde':'&#x303;','\\dot':'&#x307;','\\ddot':'&#x308;'};
+        const accMap = {
+          '\\hat':'&#x302;','\\widehat':'&#x302;','\\bar':'&#x304;','\\overline':'&#x305;',
+          '\\vec':'&#x20D7;','\\overrightarrow':'&#x20D7;','\\tilde':'&#x303;',
+          '\\widetilde':'&#x303;','\\dot':'&#x307;','\\ddot':'&#x308;'
+        };
         const accChar = accMap[cmd] || '&#x302;';
         return this.wrapSubSup('<m:acc><m:accPr><m:chr m:val="'+accChar+'"/></m:accPr><m:e>'+inner+'</m:e></m:acc>');
       }
@@ -720,25 +706,55 @@ function dlBlob(blob, name) {
   a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);
 }
 
-// ── OCR PROMPTS ───────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// OCR PROMPT · v10 · KHÔNG dùng overline; widehat cho mọi ký hiệu trên chữ cái
+// ══════════════════════════════════════════════════════════════════════════════
 const OCR_PROMPT = `Bạn là chuyên gia OCR tài liệu Toán học. Trích xuất TOÀN BỘ nội dung văn bản từ hình ảnh trang tài liệu này.
 
 QUY TẮC BẮT BUỘC:
 
 VĂN BẢN THƯỜNG: Giữ nguyên, không thêm LaTeX.
 
-BẮT BUỘC đặt trong $...$ (LaTeX inline):
+BẮT BUỘC đặt trong $...$ (LaTeX inline) — MỌI số và biến toán học xuất hiện trong đề bài:
 - Mọi chữ cái là biến toán học: $x$, $y$, $A$, $B$, $P$, $Q$, $M$, $K$, $m$, $n$
+- MỌI số đứng độc lập trong câu: lớp $10$, khối $9$, $150$ học sinh, $3$ ngày, $5$ ngày, $1500$ bộ, $100$ bộ, $80$ điểm, $8$ điểm, năm $2024$
 - Biểu thức và công thức: $P = \\frac{5}{\\sqrt{x}-2}$
-- Phân số: $\\frac{a}{b}$, Căn: $\\sqrt{x}$, Lũy thừa: $x^2$, $x_1$
-- Điều kiện: $x \\geq 0$, $x \\neq 4$, Khoảng: $[20; 25)$
-- Số trong bảng thống kê, số lượng hàng hóa, giá tiền trong bài toán
-- GÓC: dùng $\\widehat{APE}$, VUÔNG GÓC: dùng $SE \\perp FO$
+- Phân số: $\\frac{a}{b}$
+- Căn: $\\sqrt{x}$, $\\sqrt{x}-2$
+- Lũy thừa/chỉ số: $x^2$, $x_1$, $x_2$
+- Điều kiện: $x \\geq 0$, $x \\neq 4$
+- Khoảng: $[20; 25)$, $[25; 30)$
+- Phương trình: $x^2 - mx - 1 = 0$
+- VUÔNG GÓC: dùng $SE \\perp FO$
+
+KÝ HIỆU CÓ DẤU PHÍA TRÊN CHỮ CÁI — QUY TẮC DUY NHẤT:
+- GÓC (2 hoặc 3 chữ cái, dấu mũ/cung phía trên): LUÔN dùng \\widehat{}: $\\widehat{AB}$, $\\widehat{BAD}$, $\\widehat{APE}$, $\\widehat{AMK}$
+- ĐOẠN THẲNG / ĐỘ DÀI (2 chữ cái, gạch ngang thẳng phía trên): LUÔN dùng \\widehat{}: $\\widehat{AB}$, $\\widehat{PE}$, $\\widehat{MN}$
+- VEC-TƠ (mũi tên phía trên): dùng \\overrightarrow{}: $\\overrightarrow{AB}$, $\\overrightarrow{u}$
+- TUYỆT ĐỐI CẤM dùng \\overline{} trong bất kỳ trường hợp nào.
+
+SỐ KÈM ĐƠN VỊ ĐO LƯỜNG (độ dài, diện tích, thể tích, góc): số VÀ đơn vị đặt trong cùng một $...$
+  Ví dụ: $5 \\text{ cm}$, $3 \\text{ m}$, $12 \\text{ cm}^2$, $8 \\text{ dm}^3$, $90^\\circ$
+- Đơn vị tiền tệ, khối lượng, số lượng hàng hóa: chỉ đặt số trong $...$, đơn vị để ngoài
+  Ví dụ: $80$ triệu đồng/tấn, $20$ tấn, $1$ triệu, $2$ kg
 
 BẮT BUỘC đặt trong $$...$$ (display block):
 - Công thức chiếm cả dòng: $$Q = \\frac{\\sqrt{x}-2}{\\sqrt{x}+2}$$
 
-KHÔNG cần LaTeX: số thứ tự câu, tiêu đề bài, năm học, đơn vị đo lường.
+KHÔNG cần LaTeX: số thứ tự câu (1), 2), 3)), tiêu đề bài (Bài I, Bài II), năm học.
+
+CHÍNH TẢ: Đọc kỹ từng chữ, gõ chính xác tiếng Việt — dấu hỏi/ngã, d/gi/r, c/k/q, dấu sắc/huyền. KHÔNG tự ý sửa hay bỏ từ trong đề bài.
+
+Ví dụ đúng:
+- "nhà trường tổ chức khảo sát cho $150$ học sinh khối $9$" ✓
+- "tổ thứ nhất in trong $3$ ngày và tổ thứ hai in trong $5$ ngày thì cả hai tổ in được tất cả $1500$ bộ" ✓
+- "mỗi ngày, tổ thứ nhất in được nhiều hơn tổ thứ hai là $100$ bộ hồ sơ" ✓
+- "giá $80$ triệu đồng/tấn với số lượng $20$ tấn" ✓
+- "Hình chữ nhật $ABCD$ có $AB = 3 \\text{ cm}$, $BC = 4 \\text{ cm}$" ✓
+- "Tính độ dài đoạn $\\widehat{AB}$ và $\\widehat{PE}$" ✓  ← đoạn thẳng dùng widehat
+- "Chứng minh $\\widehat{APE} = \\widehat{AMK}$ và $PM \\cdot PN = PE \\cdot PF$" ✓  ← góc dùng widehat
+- "Chứng minh $\\widehat{BAD} = \\widehat{MAC}$" ✓  ← luôn widehat, không bao giờ overline
+- "Cho $\\overrightarrow{AB} + \\overrightarrow{CD} = \\overrightarrow{0}$" ✓  ← vec-tơ dùng overrightarrow
 
 Giữ nguyên cấu trúc đoạn văn. Không thêm lời giải thích.
 Trang trống → trả về: [Trang trống]

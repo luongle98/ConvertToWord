@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF / Ảnh → Word Equations · v7</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{--bg:#0d0d10;--s1:#14141a;--s2:#1c1c26;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--accent:#e8854a;--accent2:#f0a878;--glow:rgba(232,133,74,0.18);--text:#eeedf5;--muted:#8887a8;--ok:#5ecf88;--warn:#f0c060;--err:#f07070;--info:#70aaee;--font:'Segoe UI',system-ui,sans-serif;--mono:'Cascadia Code','Fira Mono',monospace;--r:12px;--r2:8px;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;flex-direction:column}
+header{padding:1.25rem 2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;background:var(--s1);position:sticky;top:0;z-index:10;}
+.logo{width:38px;height:38px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,#e8854a,#c850c0);display:flex;align-items:center;justify-content:center;font-size:18px;}
+header h1{font-size:1.1rem;font-weight:600}
+header p{font-size:.75rem;color:var(--muted);margin-top:1px}
+.hbadge{margin-left:auto;font-size:.7rem;font-weight:600;padding:4px 11px;border-radius:20px;border:1px solid rgba(232,133,74,.4);background:rgba(232,133,74,.12);color:var(--accent2);white-space:nowrap;}
+main{flex:1;display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 67px)}
+.left{background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;gap:1.1rem;padding:1.25rem;overflow-y:auto;}
+.left-spacer{display:contents;}
+.cvt-btn-wrap{}
+.slabel{font-size:.68rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600;margin-bottom:.4rem;}
+.inp-wrap{position:relative;display:flex;align-items:center}
+.inp-wrap input,.inp-full,.sel{width:100%;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:9px 12px;color:var(--text);font-size:.83rem;outline:none;transition:border-color .2s;}
+.inp-wrap input,.inp-full{font-family:var(--mono);}
+.inp-wrap input:focus,.inp-full:focus,.sel:focus{border-color:var(--accent)}
+.sel{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238887a8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.eye{position:absolute;right:10px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:4px;line-height:1;}
+.hint{font-size:.7rem;color:var(--muted);line-height:1.5;margin-top:4px}
+.hint a{color:var(--accent2);text-decoration:none}
+.baseurl-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.baseurl-badge{font-size:.65rem;padding:2px 7px;border-radius:10px;border:1px solid rgba(112,170,238,.35);background:rgba(112,170,238,.1);color:var(--info);white-space:nowrap;}
+.reset-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:2px 6px;border-radius:4px;transition:all .2s;}
+.reset-btn:hover{color:var(--accent2);background:rgba(232,133,74,.1)}
+
+/* ── MODE TABS ── */
+.mode-tabs{display:flex;gap:0;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);overflow:hidden;margin-bottom:0;}
+.mode-tab{flex:1;padding:9px 6px;text-align:center;cursor:pointer;font-size:.8rem;font-weight:500;color:var(--muted);background:transparent;border:none;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.mode-tab:hover{color:var(--text)}
+.mode-tab.active{background:linear-gradient(135deg,rgba(232,133,74,.25),rgba(200,80,192,.2));color:var(--accent2);border-bottom:2px solid var(--accent);}
+
+.drop{border:2px dashed var(--border2);border-radius:var(--r);padding:1.5rem 1rem;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--glow)}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:1.6rem;margin-bottom:.35rem}
+.drop p{font-size:.82rem;color:var(--muted)}.drop strong{color:var(--text)}
+
+/* ── IMAGE THUMBNAILS GRID ── */
+.img-grid{display:none;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.img-grid.show{display:flex}
+.img-thumb{position:relative;width:80px;height:80px;border-radius:6px;overflow:hidden;border:1px solid var(--border2);flex-shrink:0;}
+.img-thumb img{width:100%;height:100%;object-fit:cover;}
+.img-thumb .del-x{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);border:none;color:#fff;border-radius:3px;width:18px;height:18px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;line-height:1;}
+.img-thumb .del-x:hover{background:var(--err)}
+.img-add{width:80px;height:80px;border-radius:6px;border:2px dashed var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:1.4rem;color:var(--muted);background:var(--s2);transition:all .2s;flex-shrink:0;}
+.img-add:hover{border-color:var(--accent);color:var(--accent2);background:var(--glow)}
+.img-add input{display:none}
+.img-count{font-size:.68rem;color:var(--muted);margin-top:4px}
+
+.chip{display:none;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:10px 12px;gap:10px;align-items:center;}
+.chip.show{display:flex}
+.chip-name{flex:1;min-width:0;font-size:.83rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip-size{font-size:.72rem;color:var(--muted);margin-top:2px}
+.chip-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:3px 5px;border-radius:4px;transition:all .2s;}
+.chip-del:hover{color:var(--err)}
+.opt-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0}
+.opt-label{font-size:.8rem;color:var(--muted)}
+.tog{position:relative;width:36px;height:20px;flex-shrink:0}
+.tog input{display:none}
+.tog-sl{position:absolute;inset:0;background:var(--s2);border:1px solid var(--border2);border-radius:10px;cursor:pointer;transition:all .2s;}
+.tog-sl::after{content:'';position:absolute;width:14px;height:14px;background:var(--muted);border-radius:50%;top:2px;left:2px;transition:all .2s;}
+.tog input:checked+.tog-sl{background:var(--accent);border-color:var(--accent)}
+.tog input:checked+.tog-sl::after{left:18px;background:#fff}
+.cvt-btn{width:100%;padding:13px;border:none;border-radius:var(--r);background:linear-gradient(135deg,#e8854a,#c850c0);color:#fff;font-size:.93rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;}
+.cvt-btn:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}
+.cvt-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.right{display:flex;flex-direction:column;overflow:hidden}
+.sbar{padding:.65rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;font-size:.8rem;color:var(--muted);background:var(--s1);min-height:48px;}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.sdot.proc{background:var(--warn);animation:pulse 1s infinite}.sdot.ok{background:var(--ok)}.sdot.err{background:var(--err)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.prog-wrap{margin-left:auto;display:none;align-items:center;gap:8px}
+.prog-wrap.show{display:flex}
+.prog-track{width:130px;height:3px;background:var(--s2);border-radius:2px;overflow:hidden}
+.prog-bar{height:100%;background:linear-gradient(90deg,#e8854a,#c850c0);width:0%;transition:width .3s}
+.prog-pct{font-size:.72rem;min-width:33px;text-align:right}
+.content{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:1rem}
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;color:var(--muted);padding:2rem;}
+.empty-ico{font-size:3rem;opacity:.35}
+.empty h3{font-size:.95rem;font-weight:500;color:var(--text);opacity:.55}
+.empty p{font-size:.78rem;max-width:280px;line-height:1.65}
+.pcard{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.pcard-hd{padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted);}
+.pnum{background:var(--accent);color:#fff;border-radius:4px;padding:1px 7px;font-size:.7rem;font-weight:700;}
+.pnum.img-mode{background:linear-gradient(135deg,#5ecf88,#30aaaa);}
+.math-badge{margin-left:auto;font-size:.72rem;color:var(--accent2);}
+.eq-badge{font-size:.72rem;color:var(--ok);margin-left:4px;}
+.pcard-body{padding:1rem 1.25rem;font-size:.86rem;line-height:1.85;word-break:break-word;color:var(--text);white-space:pre-wrap;}
+.mtag{display:inline-block;background:rgba(94,207,136,.1);border:1px solid rgba(94,207,136,.3);border-radius:4px;padding:0 5px;font-family:var(--mono);font-size:.78rem;color:var(--ok);margin:0 1px;}
+.raw-box{background:#0a0a12;border:1px solid rgba(112,170,238,.2);border-radius:var(--r2);padding:10px 12px;font-family:var(--mono);font-size:.7rem;line-height:1.65;color:#7090b0;max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin-top:8px;}
+.raw-box .raw-label{color:var(--info);font-weight:600;margin-bottom:4px;display:block;}
+
+/* ── IMAGE PREVIEW IN CARD ── */
+.img-preview-wrap{margin-bottom:10px;border-radius:6px;overflow:hidden;border:1px solid var(--border2);max-height:200px;display:flex;align-items:center;justify-content:center;background:#0a0a0f;}
+.img-preview-wrap img{max-width:100%;max-height:200px;object-fit:contain;}
+
+.dl-area{display:none;flex-direction:column;gap:8px}
+.dl-area.show{display:flex}
+.dl-btn{padding:11px 16px;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);color:var(--text);font-size:.83rem;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .2s;width:fit-content;}
+.dl-btn.prime{background:linear-gradient(135deg,rgba(232,133,74,.15),rgba(200,80,192,.15));border-color:rgba(232,133,74,.4);color:var(--accent2);}
+.dl-btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+.log-wrap{display:flex;flex-direction:column;gap:6px}
+.log-box{background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:10px 12px;font-family:var(--mono);font-size:.72rem;line-height:1.7;color:var(--muted);max-height:200px;overflow-y:auto;}
+.ll{display:flex;gap:8px}
+.lt{color:#44445a;flex-shrink:0}
+.lm.ok{color:var(--ok)}.lm.warn{color:var(--warn)}.lm.err{color:var(--err)}.lm.info{color:var(--info)}
+.spin{width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;animation:rot .65s linear infinite;flex-shrink:0;}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* img mode info box */
+.mode-info{background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:9px 12px;font-size:.74rem;color:var(--muted);line-height:1.8;}
+.mode-info strong{color:var(--text)}
+
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+@media(max-width:680px){main{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:auto}.left{border-right:none;border-bottom:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">✦</div>
+  <div><h1>PDF / Ảnh → Word Converter</h1><p>OCR Toán học · Word Equations (OMML) v7 · PDF + Ảnh</p></div>
+  <span class="hbadge">Claude AI</span>
+</header>
+<main>
+<div class="left">
+<div class="left-spacer">
+  <div>
+    <p class="slabel">🔑 Anthropic API Key</p>
+    <div class="inp-wrap">
+      <input type="password" id="apiKey" placeholder="sk-ant-api03-...">
+      <button class="eye" id="eyeBtn">👁</button>
+    </div>
+    <p class="hint">Lấy key tại <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a></p>
+  </div>
+
+  <div>
+    <p class="slabel">🌐 Base URL</p>
+    <div class="baseurl-row">
+      <span class="baseurl-badge" id="urlBadge">proxy</span>
+      <button class="reset-btn" id="resetUrl">↺ Reset về default</button>
+    </div>
+    <input type="text" class="inp-full" id="baseUrl" value="https://1gw.gwai.cloud">
+    <p class="hint">Để trống hoặc nhập <code style="background:var(--s2);padding:1px 4px;border-radius:3px;font-family:var(--mono);font-size:.68rem">https://api.anthropic.com</code> nếu dùng direct</p>
+  </div>
+
+  <div>
+    <p class="slabel">🤖 Model</p>
+    <select id="modelSel" class="sel">
+      <option value="claude-haiku-4-5">claude-haiku-4-5 · Nhanh nhất</option>
+      <option value="claude-sonnet-4-6" selected>claude-sonnet-4-6 · Khuyên dùng ✦</option>
+      <option value="claude-opus-4-6">claude-opus-4-6 · Chính xác nhất</option>
+    </select>
+  </div>
+
+  <!-- ── MODE SELECTOR ── -->
+  <div>
+    <p class="slabel">📁 Chế độ đầu vào</p>
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tabPdf" onclick="switchMode('pdf')">📄 PDF</button>
+      <button class="mode-tab" id="tabImg" onclick="switchMode('img')">🖼️ Ảnh (JPG/PNG)</button>
+    </div>
+  </div>
+
+  <!-- ── PDF MODE ── -->
+  <div id="pdfSection">
+    <p class="slabel">📂 File PDF</p>
+    <div class="drop" id="dropZone">
+      <input type="file" id="fileIn" accept=".pdf">
+      <div class="drop-icon">📄</div>
+      <p><strong>Kéo thả hoặc bấm chọn</strong></p>
+      <p style="margin-top:3px">Hỗ trợ file .pdf</p>
+    </div>
+    <div class="chip" id="chip">
+      <span style="font-size:1.4rem">📋</span>
+      <div style="flex:1;min-width:0"><p class="chip-name" id="chipName"></p><p class="chip-size" id="chipSize"></p></div>
+      <button class="chip-del" id="chipDel">✕</button>
+    </div>
+  </div>
+
+  <!-- ── IMAGE MODE ── -->
+  <div id="imgSection" style="display:none">
+    <p class="slabel">🖼️ Ảnh tài liệu</p>
+    <div class="mode-info" style="margin-bottom:8px">
+      <strong>Hỗ trợ:</strong> JPG, JPEG, PNG, WEBP, GIF<br>
+      Chọn nhiều ảnh · Kéo thả tự do · Sắp xếp theo thứ tự
+    </div>
+    <div class="drop" id="dropZoneImg">
+      <input type="file" id="fileInImg" accept="image/*" multiple>
+      <div class="drop-icon">🖼️</div>
+      <p><strong>Kéo thả hoặc bấm chọn</strong></p>
+      <p style="margin-top:3px">JPG · PNG · WEBP · GIF · nhiều file</p>
+    </div>
+    <div class="img-grid" id="imgGrid"></div>
+    <p class="hint" id="imgCountLabel"></p>
+  </div>
+
+  <div>
+    <p class="slabel">⚙️ Tuỳ chọn</p>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      <div class="opt-row">
+        <span class="opt-label">🔍 Hiện raw response (debug)</span>
+        <label class="tog"><input type="checkbox" id="optRaw"><span class="tog-sl"></span></label>
+      </div>
+      <div class="opt-row">
+        <span class="opt-label">🪵 Log chi tiết</span>
+        <label class="tog"><input type="checkbox" id="optLog" checked><span class="tog-sl"></span></label>
+      </div>
+      <div class="opt-row" id="optShowImgRow">
+        <span class="opt-label">🖼️ Hiện preview ảnh trong kết quả</span>
+        <label class="tog"><input type="checkbox" id="optShowImg" checked><span class="tog-sl"></span></label>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end left-spacer -->
+<div class="cvt-btn-wrap">
+  <button class="cvt-btn" id="cvtBtn" disabled>
+    <span id="cvtIco">✦</span>
+    <span id="cvtTxt">Chuyển đổi</span>
+  </button>
+</div>
+</div>
+
+<div class="right">
+  <div class="sbar">
+    <div class="sdot" id="sdot"></div>
+    <span id="stxt">Sẵn sàng · Nhập API key và chọn file để bắt đầu</span>
+    <div class="prog-wrap" id="progWrap">
+      <div class="prog-track"><div class="prog-bar" id="progBar"></div></div>
+      <span class="prog-pct" id="progPct">0%</span>
+    </div>
+  </div>
+  <div class="content" id="content">
+    <div class="empty" id="emptyState">
+      <div class="empty-ico">✦</div>
+      <h3>Chưa có kết quả</h3>
+      <p>Nhập API key, chọn PDF hoặc ảnh và bấm <b>✦ Chuyển đổi</b>.</p>
+    </div>
+  </div>
+</div>
+</main>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const DEFAULT_BASE_URL = 'https://api.anthropic.com';
+let pdfFile = null, pdfPageCount = 0, resultPages = [];
+let imageFiles = []; // [{file, dataUrl, b64, mime}]
+let currentMode = 'pdf'; // 'pdf' | 'img'
+const $ = id => document.getElementById(id);
+
+// ── MODE SWITCHING ────────────────────────────────────────────────────────────
+function switchMode(mode) {
+  currentMode = mode;
+  $('tabPdf').classList.toggle('active', mode === 'pdf');
+  $('tabImg').classList.toggle('active', mode === 'img');
+  $('pdfSection').style.display = mode === 'pdf' ? '' : 'none';
+  $('imgSection').style.display = mode === 'img' ? '' : 'none';
+  $('optShowImgRow').style.display = mode === 'img' ? '' : 'none';
+  checkReady();
+}
+
+// ── localStorage ──────────────────────────────────────────────────────────────
+const LS = {
+  save: (k,v) => { try { localStorage.setItem('pdfword_'+k, v); } catch{} },
+  load: (k, def='') => { try { return localStorage.getItem('pdfword_'+k) ?? def; } catch{ return def; } }
+};
+
+function getBaseUrl() { return ($('baseUrl').value.trim().replace(/\/+$/,'')) || DEFAULT_BASE_URL; }
+function updateUrlBadge() {
+  const val = $('baseUrl').value.trim().replace(/\/+$/,'');
+  const isDefault = !val || val === DEFAULT_BASE_URL;
+  const b = $('urlBadge'), r = $('resetUrl');
+  if (isDefault) {
+    b.textContent='default'; b.style.borderColor='rgba(112,170,238,.35)'; b.style.background='rgba(112,170,238,.1)'; b.style.color='var(--info)';
+    r.style.opacity='0.4'; r.style.pointerEvents='none';
+  } else {
+    b.textContent='proxy'; b.style.borderColor='rgba(94,207,136,.4)'; b.style.background='rgba(94,207,136,.1)'; b.style.color='var(--ok)';
+    r.style.opacity='1'; r.style.pointerEvents='auto';
+  }
+}
+$('baseUrl').addEventListener('input', () => { updateUrlBadge(); LS.save('baseUrl', $('baseUrl').value); });
+$('resetUrl').onclick = () => { $('baseUrl').value = DEFAULT_BASE_URL; updateUrlBadge(); LS.save('baseUrl', DEFAULT_BASE_URL); };
+updateUrlBadge();
+
+(function restoreSettings() {
+  const savedKey = LS.load('apiKey');
+  const savedUrl = LS.load('baseUrl');
+  const savedModel = LS.load('model');
+  if (savedKey) $('apiKey').value = savedKey;
+  if (savedUrl) { $('baseUrl').value = savedUrl; updateUrlBadge(); }
+  if (savedModel) $('modelSel').value = savedModel;
+})();
+
+$('eyeBtn').onclick = () => { const k=$('apiKey'); k.type = k.type==='password'?'text':'password'; };
+$('modelSel').addEventListener('change', () => LS.save('model', $('modelSel').value));
+function setStatus(msg,type=''){$('stxt').textContent=msg;$('sdot').className='sdot'+(type?' '+type:'');}
+function setProgress(p){$('progBar').style.width=p+'%';$('progPct').textContent=p+'%';$('progWrap').classList.toggle('show',p>0);}
+function log(msg,type='info'){
+  if(!$('optLog').checked) return;
+  const box=$('logBox'); if(!box) return;
+  const t=new Date().toTimeString().slice(0,8);
+  const d=document.createElement('div'); d.className='ll';
+  d.innerHTML=`<span class="lt">${t}</span><span class="lm ${type}">${escHtml(msg)}</span>`;
+  box.appendChild(d); box.scrollTop=box.scrollHeight;
+}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function checkReady(){
+  const hasKey = $('apiKey').value.trim().length > 20;
+  if (currentMode === 'pdf') $('cvtBtn').disabled = !(pdfFile && hasKey);
+  else $('cvtBtn').disabled = !(imageFiles.length > 0 && hasKey);
+}
+
+// ── PDF FILE HANDLING ─────────────────────────────────────────────────────────
+const dropZone=$('dropZone'),fileIn=$('fileIn');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('over');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('over'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('over');const f=e.dataTransfer.files[0];if(f?.type==='application/pdf')loadFile(f);});
+fileIn.addEventListener('change',()=>{if(fileIn.files[0])loadFile(fileIn.files[0]);});
+$('chipDel').onclick=clearFile;
+async function loadFile(f){
+  pdfFile=f;$('chipName').textContent=f.name;$('chipSize').textContent=(f.size/1024).toFixed(1)+' KB · PDF';
+  $('chip').classList.add('show');dropZone.style.display='none';
+  try{const ab=await f.arrayBuffer();const doc=await pdfjsLib.getDocument({data:ab}).promise;pdfPageCount=doc.numPages;}catch{pdfPageCount=0;}
+  checkReady();
+}
+function clearFile(){pdfFile=null;pdfPageCount=0;fileIn.value='';$('chip').classList.remove('show');dropZone.style.display='';checkReady();}
+$('apiKey').addEventListener('input', () => { checkReady(); LS.save('apiKey', $('apiKey').value); });
+
+// ── IMAGE FILE HANDLING ───────────────────────────────────────────────────────
+const dropZoneImg = $('dropZoneImg');
+const fileInImg = $('fileInImg');
+
+dropZoneImg.addEventListener('dragover',e=>{e.preventDefault();dropZoneImg.classList.add('over');});
+dropZoneImg.addEventListener('dragleave',()=>dropZoneImg.classList.remove('over'));
+dropZoneImg.addEventListener('drop',e=>{
+  e.preventDefault();dropZoneImg.classList.remove('over');
+  const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));
+  if(files.length) addImageFiles(files);
+});
+fileInImg.addEventListener('change',()=>{
+  if(fileInImg.files.length) addImageFiles([...fileInImg.files]);
+  fileInImg.value='';
+});
+
+async function fileToBase64(file) {
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>{
+      const dataUrl=r.result;
+      const b64=dataUrl.split(',')[1];
+      res({dataUrl,b64,mime:file.type||'image/jpeg'});
+    };
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function addImageFiles(files) {
+  for(const f of files) {
+    try {
+      const {dataUrl,b64,mime} = await fileToBase64(f);
+      imageFiles.push({file:f, dataUrl, b64, mime, name:f.name});
+    } catch(e) { console.warn('Failed to read image:', f.name); }
+  }
+  renderImgGrid();
+  checkReady();
+}
+
+function removeImage(idx) {
+  imageFiles.splice(idx,1);
+  renderImgGrid();
+  checkReady();
+}
+
+function renderImgGrid() {
+  const grid = $('imgGrid');
+  grid.innerHTML = '';
+  if(imageFiles.length === 0) {
+    grid.classList.remove('show');
+    $('imgCountLabel').textContent = '';
+    dropZoneImg.style.display = '';
+    return;
+  }
+  dropZoneImg.style.display = 'none';
+  grid.classList.add('show');
+  imageFiles.forEach((img,i)=>{
+    const thumb = document.createElement('div');
+    thumb.className = 'img-thumb';
+    thumb.innerHTML = `<img src="${img.dataUrl}" alt="${escHtml(img.name)}"><button class="del-x" title="Xoá ảnh này">✕</button>`;
+    thumb.querySelector('.del-x').onclick = ()=>removeImage(i);
+    grid.appendChild(thumb);
+  });
+  // Add button
+  const addBtn = document.createElement('label');
+  addBtn.className = 'img-add';
+  addBtn.title = 'Thêm ảnh';
+  addBtn.innerHTML = `<input type="file" accept="image/*" multiple style="display:none">➕<span style="font-size:.6rem;margin-top:2px">Thêm</span>`;
+  addBtn.querySelector('input').addEventListener('change', function(){
+    if(this.files.length) addImageFiles([...this.files]);
+    this.value='';
+  });
+  grid.appendChild(addBtn);
+  $('imgCountLabel').textContent = `${imageFiles.length} ảnh đã chọn · Bấm ✕ để xoá`;
+}
+
+// ── CORE API CALL ─────────────────────────────────────────────────────────────
+async function callAPI(messages) {
+  const apiKey = $('apiKey').value.trim();
+  const model  = $('modelSel').value;
+  const base   = getBaseUrl();
+  const body = { model, max_tokens: 4096, messages };
+  const res = await fetch(`${base}/v1/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify(body)
+  });
+  const rawText = await res.text();
+  let parsed; try { parsed = JSON.parse(rawText); } catch(e) { parsed = null; }
+  if (!res.ok) {
+    const msg = parsed?.error?.message || `HTTP ${res.status}: ${rawText.slice(0,200)}`;
+    return { text: '', rawJson: rawText, error: msg };
+  }
+  let text = '';
+  if (parsed) {
+    if (Array.isArray(parsed.content)) { for (const block of parsed.content) { if (block.type === 'text') text += block.text; } }
+    else if (parsed.choices) { text = parsed.choices[0]?.message?.content || ''; }
+    else if (typeof parsed.text === 'string') { text = parsed.text; }
+  }
+  return { text: text.trim(), rawJson: rawText, error: null };
+}
+
+// ── PDF PAGE → BASE64 JPEG ────────────────────────────────────────────────────
+async function pageToBase64(pdfDoc, pageNum, scale=2.5) {
+  const page = await pdfDoc.getPage(pageNum);
+  const vp = page.getViewport({scale});
+  const canvas = document.createElement('canvas');
+  canvas.width = vp.width; canvas.height = vp.height;
+  await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+  return canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LaTeX → OMML Converter
+// ══════════════════════════════════════════════════════════════════════════════
+function xe(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+const SYM_MAP = {
+  '\\alpha':'α','\\beta':'β','\\gamma':'γ','\\delta':'δ','\\epsilon':'ε','\\varepsilon':'ε',
+  '\\zeta':'ζ','\\eta':'η','\\theta':'θ','\\iota':'ι','\\kappa':'κ','\\lambda':'λ',
+  '\\mu':'μ','\\nu':'ν','\\xi':'ξ','\\pi':'π','\\rho':'ρ','\\sigma':'σ',
+  '\\tau':'τ','\\upsilon':'υ','\\phi':'φ','\\chi':'χ','\\psi':'ψ','\\omega':'ω',
+  '\\Gamma':'Γ','\\Delta':'Δ','\\Theta':'Θ','\\Lambda':'Λ','\\Xi':'Ξ','\\Pi':'Π',
+  '\\Sigma':'Σ','\\Upsilon':'Υ','\\Phi':'Φ','\\Psi':'Ψ','\\Omega':'Ω',
+  '\\geq':'≥','\\leq':'≤','\\neq':'≠','\\ge':'≥','\\le':'≤','\\ne':'≠',
+  '\\times':'×','\\cdot':'·','\\div':'÷','\\pm':'±','\\mp':'∓',
+  '\\infty':'∞','\\partial':'∂','\\nabla':'∇','\\forall':'∀','\\exists':'∃',
+  '\\in':'∈','\\notin':'∉','\\subset':'⊂','\\supset':'⊃','\\cup':'∪','\\cap':'∩',
+  '\\rightarrow':'→','\\leftarrow':'←','\\Rightarrow':'⇒','\\Leftrightarrow':'⟺',
+  '\\approx':'≈','\\equiv':'≡','\\sim':'∼','\\propto':'∝',
+  '\\ldots':'…','\\cdots':'⋯','\\vdots':'⋮','\\ddots':'⋱',
+  '\\lfloor':'⌊','\\rfloor':'⌋','\\lceil':'⌈','\\rceil':'⌉',
+  '\\left(':'(','\\right)':')','\\left[':'[','\\right]':']',
+  '\\left\\{':'{','\\right\\}':'}','\\left|':'|','\\right|':'|',
+  '\\{':'{','\\}':'}','\\|':'‖',
+  '\\ ':' ','\\,':' ','\\;':' ','\\quad':' ','\\qquad':'  ',
+  '\\ln':'ln','\\log':'log','\\sin':'sin','\\cos':'cos','\\tan':'tan',
+  '\\cot':'cot','\\sec':'sec','\\csc':'csc','\\arcsin':'arcsin','\\arccos':'arccos',
+  '\\arctan':'arctan','\\exp':'exp','\\lim':'lim','\\max':'max','\\min':'min',
+  '\\sup':'sup','\\inf':'inf','\\det':'det','\\dim':'dim','\\ker':'ker',
+  '\\gcd':'gcd','\\lcm':'lcm','\\mod':'mod',
+  '\\perp':'⊥','\\parallel':'∥','\\angle':'∠','\\triangle':'△',
+  '\\hat':null,'\\bar':null,'\\vec':null,'\\tilde':null,'\\dot':null,'\\ddot':null,
+  '\\widehat':null,'\\widetilde':null,'\\overrightarrow':null,
+};
+function tokenize(s) {
+  const tokens = [];
+  let i = 0;
+  while (i < s.length) {
+    if (s[i] === '\\') {
+      let cmd = '\\'; i++;
+      if (i < s.length && /[a-zA-Z]/.test(s[i])) {
+        while (i < s.length && /[a-zA-Z]/.test(s[i])) { cmd += s[i]; i++; }
+        while (i < s.length && s[i] === ' ') i++;
+      } else if (i < s.length) { cmd += s[i]; i++; }
+      tokens.push({type:'cmd', val:cmd});
+    } else if (s[i] === '{') { tokens.push({type:'lbrace'}); i++; }
+    else if (s[i] === '}') { tokens.push({type:'rbrace'}); i++; }
+    else if (s[i] === '_') { tokens.push({type:'sub'}); i++; }
+    else if (s[i] === '^') { tokens.push({type:'sup'}); i++; }
+    else if (s[i] === ' ' || s[i] === '\t') { i++; }
+    else { tokens.push({type:'char', val:s[i]}); i++; }
+  }
+  return tokens;
+}
+class OmmlParser {
+  constructor(tokens) { this.tok = tokens; this.pos = 0; }
+  peek() { return this.tok[this.pos] || null; }
+  next() { return this.tok[this.pos++] || null; }
+  done() { return this.pos >= this.tok.length; }
+  parseGroup() {
+    const t = this.peek();
+    if (!t) return '';
+    if (t.type === 'lbrace') {
+      this.next(); let inner = ''; let depth = 1;
+      while (!this.done()) {
+        const tt = this.peek();
+        if (tt.type === 'lbrace') { depth++; this.next(); inner += this.buildOne(); }
+        else if (tt.type === 'rbrace') { depth--; this.next(); if (depth === 0) break; }
+        else inner += this.buildOne();
+      }
+      return inner;
+    }
+    return this.buildOne();
+  }
+  parseGroupOmml() {
+    const t = this.peek();
+    if (!t) return '';
+    if (t.type === 'lbrace') {
+      this.next(); let result = '';
+      while (!this.done() && this.peek()?.type !== 'rbrace') result += this.buildOmml();
+      if (!this.done()) this.next();
+      return result;
+    }
+    return this.buildOmml();
+  }
+  buildOmml() {
+    const t = this.peek();
+    if (!t) return '';
+    if (t.type === 'rbrace') return '';
+    if (t.type === 'lbrace') {
+      this.next(); let result = '';
+      while (!this.done() && this.peek()?.type !== 'rbrace') result += this.buildOmml();
+      if (!this.done()) this.next();
+      return result;
+    }
+    if (t.type === 'cmd') return this.buildCmd();
+    if (t.type === 'char') { this.next(); return this.wrapSubSup(`<m:r><m:t>${xe(t.val)}</m:t></m:r>`); }
+    if (t.type === 'sub') { this.next(); const sub=this.parseGroupOmml(); return `<m:sSub><m:e><m:r><m:t></m:t></m:r></m:e><m:sub>${sub}</m:sub></m:sSub>`; }
+    if (t.type === 'sup') { this.next(); const sup=this.parseGroupOmml(); return `<m:sSup><m:e><m:r><m:t></m:t></m:r></m:e><m:sup>${sup}</m:sup></m:sSup>`; }
+    this.next(); return '';
+  }
+  wrapSubSup(base) {
+    const t = this.peek();
+    if (!t) return base;
+    if (t.type === 'sub') {
+      this.next(); const sub=this.parseGroupOmml(); const t2=this.peek();
+      if (t2?.type === 'sup') { this.next(); const sup=this.parseGroupOmml(); return `<m:sSubSup><m:e>${base}</m:e><m:sub>${sub}</m:sub><m:sup>${sup}</m:sup></m:sSubSup>`; }
+      return `<m:sSub><m:e>${base}</m:e><m:sub>${sub}</m:sub></m:sSub>`;
+    }
+    if (t.type === 'sup') {
+      this.next(); const sup=this.parseGroupOmml(); const t2=this.peek();
+      if (t2?.type === 'sub') { this.next(); const sub=this.parseGroupOmml(); return `<m:sSubSup><m:e>${base}</m:e><m:sub>${sub}</m:sub><m:sup>${sup}</m:sup></m:sSubSup>`; }
+      return `<m:sSup><m:e>${base}</m:e><m:sup>${sup}</m:sup></m:sSup>`;
+    }
+    return base;
+  }
+  buildCmd() {
+    const t = this.next(); const cmd = t.val;
+    if (cmd in SYM_MAP) {
+      const sym = SYM_MAP[cmd];
+      if (sym === null) {
+        const inner = this.parseGroupOmml();
+        const accMap = {'\\hat':'&#x302;','\\widehat':'&#x302;','\\bar':'&#x304;','\\overline':'&#x305;','\\vec':'&#x20D7;','\\overrightarrow':'&#x20D7;','\\tilde':'&#x303;','\\widetilde':'&#x303;','\\dot':'&#x307;','\\ddot':'&#x308;'};
+        const accChar = accMap[cmd] || '&#x302;';
+        return this.wrapSubSup('<m:acc><m:accPr><m:chr m:val="'+accChar+'"/></m:accPr><m:e>'+inner+'</m:e></m:acc>');
+      }
+      return this.wrapSubSup(`<m:r><m:t>${xe(sym)}</m:t></m:r>`);
+    }
+    if (cmd === '\\frac' || cmd === '\\dfrac' || cmd === '\\tfrac') { const num=this.parseGroupOmml(); const den=this.parseGroupOmml(); return this.wrapSubSup(`<m:f><m:num>${num}</m:num><m:den>${den}</m:den></m:f>`); }
+    if (cmd === '\\sqrt') {
+      let deg = '';
+      if (!this.done() && this.peek()?.type==='char' && this.peek()?.val==='[') {
+        this.next(); let di='';
+        while (!this.done() && !(this.peek()?.type==='char' && this.peek()?.val===']')) di+=this.buildOmml();
+        if(!this.done())this.next(); deg=`<m:deg>${di}</m:deg>`;
+      }
+      const rad=this.parseGroupOmml();
+      if(deg) return this.wrapSubSup(`<m:rad>${deg}<m:e>${rad}</m:e></m:rad>`);
+      return this.wrapSubSup(`<m:rad><m:deg><m:r><m:t></m:t></m:r></m:deg><m:e>${rad}</m:e></m:rad>`);
+    }
+    if (cmd === '\\overline') { const inner=this.parseGroupOmml(); return `<m:bar><m:barPr><m:pos m:val="top"/></m:barPr><m:e>${inner}</m:e></m:bar>`; }
+    if (cmd === '\\underline') { const inner=this.parseGroupOmml(); return `<m:bar><m:barPr><m:pos m:val="bot"/></m:barPr><m:e>${inner}</m:e></m:bar>`; }
+    if (cmd==='\\sum'||cmd==='\\prod'||cmd==='\\int'||cmd==='\\oint'||cmd==='\\bigcup'||cmd==='\\bigcap'||cmd==='\\lim') {
+      const opMap={'\\sum':'∑','\\prod':'∏','\\int':'∫','\\oint':'∮','\\bigcup':'⋃','\\bigcap':'⋂','\\lim':'lim'};
+      const sym=opMap[cmd]||cmd.slice(1); let lo='',hi='';
+      while(this.peek()?.type==='sub'||this.peek()?.type==='sup'){
+        if(this.peek().type==='sub'){this.next();lo=this.parseGroupOmml();}else{this.next();hi=this.parseGroupOmml();}
+      }
+      if(lo||hi) return `<m:nary><m:naryPr><m:chr m:val="${xe(sym)}"/></m:naryPr><m:sub>${lo}</m:sub><m:sup>${hi}</m:sup><m:e><m:r><m:t></m:t></m:r></m:e></m:nary>`;
+      return `<m:r><m:t>${xe(sym)}</m:t></m:r>`;
+    }
+    if(cmd==='\\text'||cmd==='\\mathrm'||cmd==='\\textit'||cmd==='\\mathit'||cmd==='\\mathbf'||cmd==='\\textbf'||cmd==='\\mathbb') return this.parseGroupOmml();
+    if(cmd==='\\left'||cmd==='\\right'){
+      const delim=this.peek();
+      if(delim){
+        if(delim.type==='cmd'){const ds=SYM_MAP[delim.val]||delim.val.slice(1);this.next();return `<m:r><m:t>${xe(ds)}</m:t></m:r>`;}
+        else if(delim.type==='char'){this.next();return `<m:r><m:t>${xe(delim.val)}</m:t></m:r>`;}
+      }
+      return '';
+    }
+    if(cmd==='\\begin') return this.buildEnvironment();
+    return this.wrapSubSup(`<m:r><m:rPr><m:sty m:val="p"/></m:rPr><m:t>${xe(cmd.slice(1))}</m:t></m:r>`);
+  }
+  buildEnvironment() {
+    let envName='';
+    if(this.peek()?.type==='lbrace'){this.next();while(!this.done()&&this.peek()?.type!=='rbrace'){const t=this.next();envName+=(t.val||'');}if(!this.done())this.next();}
+    let rows=[[]]; let cell=[];
+    const flushCell=()=>{rows[rows.length-1].push(cell);cell=[];};
+    const flushRow=()=>{flushCell();rows.push([]);};
+    while(!this.done()){
+      const t=this.peek();
+      if(t?.type==='cmd'&&t.val==='\\end'){this.next();if(this.peek()?.type==='lbrace'){this.next();while(!this.done()&&this.peek()?.type!=='rbrace')this.next();if(!this.done())this.next();}flushCell();break;}
+      if(t?.type==='cmd'&&t.val==='\\\\'){this.next();flushRow();continue;}
+      if(t?.type==='cmd'&&t.val==='\\&'){this.next();cell.push({type:'char',val:'&'});continue;}
+      if(t?.type==='char'&&t.val==='&'){this.next();flushCell();continue;}
+      if(t?.type==='cmd'&&t.val==='\\hline'){this.next();continue;}
+      cell.push(this.next());
+    }
+    if(rows[rows.length-1].length===0||(rows[rows.length-1].length===1&&rows[rows.length-1][0].length===0))rows.pop();
+    if(envName.includes('matrix')||envName.includes('cases')||envName.includes('array')){
+      let matXml='<m:m>';
+      matXml+='<m:mPr><m:mcs><m:mc><m:mcPr><m:count m:val="'+Math.max(1,...rows.map(r=>r.length))+'"/><m:mcJc m:val="center"/></m:mcPr></m:mc></m:mcs></m:mPr>';
+      for(const row of rows){matXml+='<m:mr>';for(const cellToks of row){const cp=new OmmlParser(cellToks);let cx='';while(!cp.done())cx+=cp.buildOmml();matXml+=`<m:e>${cx}</m:e>`;}matXml+='</m:mr>';}
+      matXml+='</m:m>';
+      if(envName==='pmatrix')return `<m:d><m:dPr><m:begChr m:val="("/><m:endChr m:val=")"/></m:dPr><m:e>${matXml}</m:e></m:d>`;
+      else if(envName==='bmatrix')return `<m:d><m:dPr><m:begChr m:val="["/><m:endChr m:val="]"/></m:dPr><m:e>${matXml}</m:e></m:d>`;
+      else if(envName==='vmatrix')return `<m:d><m:dPr><m:begChr m:val="|"/><m:endChr m:val="|"/></m:dPr><m:e>${matXml}</m:e></m:d>`;
+      else if(envName==='cases')return `<m:d><m:dPr><m:begChr m:val="{"/><m:endChr m:val=""/></m:dPr><m:e>${matXml}</m:e></m:d>`;
+      return matXml;
+    }
+    let fallback='';
+    for(const row of rows){for(const cellToks of row){const p=new OmmlParser(cellToks);while(!p.done())fallback+=p.buildOmml();}}
+    return fallback;
+  }
+}
+function latexToOmml(latex, isDisplay=false) {
+  latex = latex.trim().replace(/\\displaystyle\s*/g, '');
+  const tokens = tokenize(latex);
+  const parser = new OmmlParser(tokens);
+  let inner = '';
+  while (!parser.done()) inner += parser.buildOmml();
+  if (isDisplay) return `<m:oMathPara><m:oMath>${inner}</m:oMath></m:oMathPara>`;
+  return `<m:oMath>${inner}</m:oMath>`;
+}
+function countMath(t){let c=0,i=0;while(i<t.length){if(t[i]==='$'){const d=t[i+1]==='$';const e=d?t.indexOf('$$',i+2):t.indexOf('$',i+1);if(e>0){c++;i=e+(d?2:1);}else i++;}else i++;}return c;}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DOCX BUILDER
+// ══════════════════════════════════════════════════════════════════════════════
+function xmlEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');}
+function sanitizeXml(s){return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');}
+function lineToWordXml(line) {
+  if (!line.trim()) return '<w:p><w:pPr><w:spacing w:after="60"/></w:pPr></w:p>';
+  const parts = [];
+  let i = 0;
+  while (i < line.length) {
+    if (line[i]==='$'&&line[i+1]==='$') { const end=line.indexOf('$$',i+2); if(end>0){parts.push({type:'display',latex:line.slice(i+2,end)});i=end+2;}else{parts.push({type:'text',val:line[i]});i++;} }
+    else if (line[i]==='$') { const end=line.indexOf('$',i+1); if(end>0){parts.push({type:'inline',latex:line.slice(i+1,end)});i=end+1;}else{parts.push({type:'text',val:line[i]});i++;} }
+    else { let txt=''; while(i<line.length&&line[i]!=='$'){txt+=line[i];i++;} if(txt)parts.push({type:'text',val:txt}); }
+  }
+  if(parts.length===1&&parts[0].type==='display'){
+    const omml=latexToOmml(parts[0].latex,true);
+    return `<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="120" w:after="120"/></w:pPr>${omml}</w:p>`;
+  }
+  let content='';
+  for(const p of parts){
+    if(p.type==='text'){if(p.val)content+=`<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/><w:sz w:val="24"/></w:rPr><w:t xml:space="preserve">${xmlEsc(p.val)}</w:t></w:r>`;}
+    else{try{content+=latexToOmml(p.latex,false);}catch(e){content+=`<w:r><w:t>${xmlEsc('$'+p.latex+'$')}</w:t></w:r>`;}}
+  }
+  return `<w:p><w:pPr><w:spacing w:after="120"/></w:pPr>${content}</w:p>`;
+}
+async function buildDocx(pages, modeLabel='Trang') {
+  let body = '';
+  for (let i = 0; i < pages.length; i++) {
+    const pg = pages[i];
+    body += `<w:p><w:pPr><w:pStyle w:val="Heading2"/><w:spacing w:before="${i?320:0}" w:after="120"/></w:pPr><w:r><w:t>${xmlEsc(modeLabel)} ${pg.num}: ${xmlEsc(pg.label||'')}</w:t></w:r></w:p>`;
+    for (const line of pg.text.split('\n')) {
+      try { body += lineToWordXml(line); }
+      catch(e) { body += `<w:p><w:pPr><w:spacing w:after="120"/></w:pPr><w:r><w:t xml:space="preserve">${xmlEsc(line)}</w:t></w:r></w:p>`; }
+    }
+  }
+  body += '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1134" w:bottom="1440" w:left="1701" w:header="720" w:footer="720"/></w:sectPr>';
+  const docXml = sanitizeXml(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
+<w:body>${body}</w:body></w:document>`);
+  const stylesXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/><w:sz w:val="24"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:pPr><w:spacing w:before="200" w:after="100"/></w:pPr><w:rPr><w:b/><w:sz w:val="28"/><w:color w:val="E8854A"/><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/></w:rPr></w:style></w:styles>`;
+  const ct=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`;
+  const rels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
+  const wrels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+  const zip=new JSZip();
+  zip.file('[Content_Types].xml',ct);
+  zip.file('_rels/.rels',rels);
+  zip.file('word/document.xml',docXml);
+  zip.file('word/styles.xml',stylesXml);
+  zip.file('word/_rels/document.xml.rels',wrels);
+  return await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',compression:'DEFLATE',compressionOptions:{level:6}});
+}
+
+// ── PREVIEW ───────────────────────────────────────────────────────────────────
+function renderPreview(text) {
+  const esc=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc.replace(/\$\$([^$]+)\$\$/g,(_,m)=>`<span class="mtag" title="Display math">∫ ${m}</span>`).replace(/\$([^$\n]+)\$/g,(_,m)=>`<span class="mtag" title="Inline math">${m}</span>`).replace(/\n/g,'<br>');
+}
+function dlBlob(blob, name) {
+  const u=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);
+}
+
+// ── OCR PROMPTS ───────────────────────────────────────────────────────────────
+const OCR_PROMPT = `Bạn là chuyên gia OCR tài liệu Toán học. Trích xuất TOÀN BỘ nội dung văn bản từ hình ảnh trang tài liệu này.
+
+QUY TẮC BẮT BUỘC:
+
+VĂN BẢN THƯỜNG: Giữ nguyên, không thêm LaTeX.
+
+BẮT BUỘC đặt trong $...$ (LaTeX inline):
+- Mọi chữ cái là biến toán học: $x$, $y$, $A$, $B$, $P$, $Q$, $M$, $K$, $m$, $n$
+- Biểu thức và công thức: $P = \\frac{5}{\\sqrt{x}-2}$
+- Phân số: $\\frac{a}{b}$, Căn: $\\sqrt{x}$, Lũy thừa: $x^2$, $x_1$
+- Điều kiện: $x \\geq 0$, $x \\neq 4$, Khoảng: $[20; 25)$
+- Số trong bảng thống kê, số lượng hàng hóa, giá tiền trong bài toán
+- GÓC: dùng $\\widehat{APE}$, VUÔNG GÓC: dùng $SE \\perp FO$
+
+BẮT BUỘC đặt trong $$...$$ (display block):
+- Công thức chiếm cả dòng: $$Q = \\frac{\\sqrt{x}-2}{\\sqrt{x}+2}$$
+
+KHÔNG cần LaTeX: số thứ tự câu, tiêu đề bài, năm học, đơn vị đo lường.
+
+Giữ nguyên cấu trúc đoạn văn. Không thêm lời giải thích.
+Trang trống → trả về: [Trang trống]
+Chỉ trả về nội dung đã trích xuất.`;
+
+// ── MAIN CONVERT ──────────────────────────────────────────────────────────────
+$('cvtBtn').onclick = async () => {
+  if (currentMode === 'pdf') await convertPdf();
+  else await convertImages();
+};
+
+async function runOcr(b64, mime, label) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const result = await callAPI([{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mime, data: b64 } },
+          { type: 'text', text: OCR_PROMPT }
+        ]
+      }]);
+      if (result.error) {
+        const isRate = /overloaded|529|rate.limit|too.many/i.test(result.error);
+        if (isRate && attempt < 3) {
+          const wait = 4000 * attempt;
+          log(`${label}: server bận, thử lại sau ${wait/1000}s...`, 'warn');
+          await new Promise(r=>setTimeout(r,wait));
+          continue;
+        }
+        throw new Error(result.error);
+      }
+      return { text: result.text, rawJson: result.rawJson, error: null };
+    } catch(e) {
+      if (attempt === 3) return { text: '', rawJson: '', error: e.message };
+      await new Promise(r=>setTimeout(r,3000*attempt));
+    }
+  }
+}
+
+function makeCard(area, logWrap, {num, label, text, rawJson, total, isImg, dataUrl}) {
+  const mc = countMath(text);
+  const card = document.createElement('div');
+  card.className = 'pcard';
+
+  let rawSection = '';
+  if ($('optRaw').checked) {
+    const rawParsed = (() => { try { return JSON.parse(rawJson); } catch { return null; } })();
+    const displayRaw = rawParsed ? JSON.stringify(rawParsed,null,2).slice(0,1500) : rawJson.slice(0,1500);
+    rawSection = `<div class="raw-box"><span class="raw-label">📡 Raw API response (${rawJson.length} bytes):</span>${escHtml(displayRaw)}${rawJson.length>1500?'\n... [truncated]':''}</div>`;
+  }
+
+  let imgPreview = '';
+  if (isImg && dataUrl && $('optShowImg').checked) {
+    imgPreview = `<div class="img-preview-wrap"><img src="${dataUrl}" alt="Ảnh ${num}"></div>`;
+  }
+
+  card.innerHTML = `<div class="pcard-hd">
+    <span class="pnum ${isImg?'img-mode':''}">${isImg?'🖼️ Ảnh':'Trang'} ${num}</span>
+    <span style="color:var(--muted);font-size:.75rem">${escHtml(label)}</span>
+    ${total?`<span style="margin-left:2px;color:var(--muted);font-size:.72rem">/ ${total}</span>`:''}
+    ${mc>0
+      ? `<span class="math-badge">✦ ${mc} LaTeX</span><span class="eq-badge">→ Word Equations</span>`
+      : '<span style="color:var(--muted);font-size:.72rem;margin-left:auto">Không có công thức</span>'}
+  </div>
+  <div class="pcard-body">${imgPreview}${text.length>0?renderPreview(text):'<span style="color:var(--err)">⚠ Nội dung rỗng</span>'}${rawSection}</div>`;
+  area.insertBefore(card, logWrap);
+}
+
+// ── PDF CONVERT ───────────────────────────────────────────────────────────────
+async function convertPdf() {
+  const apiKey = $('apiKey').value.trim();
+  if (!pdfFile || !apiKey) return;
+  resultPages = [];
+  $('cvtBtn').disabled = true;
+  $('cvtIco').innerHTML = '<div class="spin"></div>';
+  $('cvtTxt').textContent = 'Đang xử lý...';
+  const area = $('content');
+  area.innerHTML = '';
+  const logWrap = document.createElement('div');
+  logWrap.className = 'log-wrap';
+  logWrap.innerHTML = `<p class="slabel" style="color:var(--muted)">🪵 Log</p><div class="log-box" id="logBox"></div>`;
+  area.appendChild(logWrap);
+  setStatus('Đang tải file PDF...', 'proc');
+  setProgress(2);
+  try {
+    log(`File: ${pdfFile.name}`, 'info');
+    const ab = await pdfFile.arrayBuffer();
+    const pdfDoc = await pdfjsLib.getDocument({data:ab}).promise;
+    const total = pdfDoc.numPages;
+    log(`PDF có ${total} trang`, 'ok');
+    for (let p = 1; p <= total; p++) {
+      setStatus(`Đang xử lý trang ${p}/${total}...`, 'proc');
+      setProgress(Math.round((p-1)/total*82)+5);
+      log(`Trang ${p}: chụp ảnh...`, 'info');
+      const b64 = await pageToBase64(pdfDoc, p, 2.5);
+      log(`Trang ${p}: ${Math.round(b64.length/1024)}KB, gọi API...`, 'info');
+      const {text, rawJson, error} = await runOcr(b64, 'image/jpeg', `Trang ${p}`);
+      const finalText = error && !text ? `[Lỗi trang ${p}: ${error}]` : text;
+      if (error && !text) log(`Trang ${p}: ❌ ${error}`, 'err');
+      else log(`Trang ${p}: ✓ ${finalText.length} ký tự · ${countMath(finalText)} công thức`, 'ok');
+      resultPages.push({num:p, text:finalText, label:''});
+      makeCard(area, logWrap, {num:p, label:`/ ${total}`, text:finalText, rawJson:rawJson||'', total:null, isImg:false});
+    }
+    setProgress(95);
+    log('Đang tạo DOCX...', 'info');
+    const blob = await buildDocx(resultPages, 'Trang');
+    const docxName = pdfFile.name.replace(/\.pdf$/i,'') + '_equations.docx';
+    log(`Xong! → ${docxName}`, 'ok');
+    setProgress(100);
+    setStatus(`Hoàn tất! ${total} trang · Word Equations`, 'ok');
+    addDownloadButtons(area, blob, docxName, resultPages, pdfFile.name.replace(/\.pdf$/i,''));
+    setTimeout(()=>setProgress(0), 2500);
+  } catch(e) {
+    showError(area, e.message);
+  } finally {
+    $('cvtBtn').disabled = false;
+    $('cvtIco').textContent = '✦';
+    $('cvtTxt').textContent = 'Chuyển đổi';
+    checkReady();
+  }
+}
+
+// ── IMAGE CONVERT ─────────────────────────────────────────────────────────────
+async function convertImages() {
+  const apiKey = $('apiKey').value.trim();
+  if (!imageFiles.length || !apiKey) return;
+  resultPages = [];
+  $('cvtBtn').disabled = true;
+  $('cvtIco').innerHTML = '<div class="spin"></div>';
+  $('cvtTxt').textContent = 'Đang xử lý...';
+  const area = $('content');
+  area.innerHTML = '';
+  const logWrap = document.createElement('div');
+  logWrap.className = 'log-wrap';
+  logWrap.innerHTML = `<p class="slabel" style="color:var(--muted)">🪵 Log</p><div class="log-box" id="logBox"></div>`;
+  area.appendChild(logWrap);
+  setStatus('Đang xử lý ảnh...', 'proc');
+  setProgress(2);
+  const total = imageFiles.length;
+  log(`Chế độ ảnh · ${total} ảnh`, 'info');
+  try {
+    for (let i = 0; i < total; i++) {
+      const img = imageFiles[i];
+      const p = i + 1;
+      setStatus(`Đang xử lý ảnh ${p}/${total}: ${img.name}`, 'proc');
+      setProgress(Math.round(i/total*82)+5);
+      log(`Ảnh ${p}: ${img.name} (${(img.file.size/1024).toFixed(1)}KB)`, 'info');
+      const {text, rawJson, error} = await runOcr(img.b64, img.mime, `Ảnh ${p}`);
+      const finalText = error && !text ? `[Lỗi ảnh ${p}: ${error}]` : text;
+      if (error && !text) log(`Ảnh ${p}: ❌ ${error}`, 'err');
+      else log(`Ảnh ${p}: ✓ ${finalText.length} ký tự · ${countMath(finalText)} công thức`, 'ok');
+      resultPages.push({num:p, text:finalText, label:img.name});
+      makeCard(area, logWrap, {num:p, label:img.name, text:finalText, rawJson:rawJson||'', total, isImg:true, dataUrl:img.dataUrl});
+    }
+    setProgress(95);
+    log('Đang tạo DOCX...', 'info');
+    const blob = await buildDocx(resultPages, 'Ảnh');
+    const baseName = imageFiles.length === 1
+      ? imageFiles[0].name.replace(/\.[^.]+$/,'')
+      : `images_${total}`;
+    const docxName = baseName + '_equations.docx';
+    log(`Xong! → ${docxName}`, 'ok');
+    setProgress(100);
+    setStatus(`Hoàn tất! ${total} ảnh · Word Equations`, 'ok');
+    addDownloadButtons(area, blob, docxName, resultPages, baseName);
+    setTimeout(()=>setProgress(0), 2500);
+  } catch(e) {
+    showError(area, e.message);
+  } finally {
+    $('cvtBtn').disabled = false;
+    $('cvtIco').textContent = '✦';
+    $('cvtTxt').textContent = 'Chuyển đổi lại';
+    checkReady();
+  }
+}
+
+function addDownloadButtons(area, blob, docxName, pages, baseName) {
+  const dlArea = document.createElement('div');
+  dlArea.className = 'dl-area show';
+  dlArea.innerHTML = `<p class="slabel" style="color:var(--muted)">📥 Tải xuống</p>
+    <button class="dl-btn prime" id="dlDocx">📄 ${escHtml(docxName)} (Word Equations)</button>
+    <button class="dl-btn" id="dlTxt">📝 Tải file .txt (LaTeX gốc)</button>`;
+  area.insertBefore(dlArea, area.firstChild);
+  $('dlDocx').onclick = () => dlBlob(blob, docxName);
+  $('dlTxt').onclick = () => {
+    const c = pages.map(p=>`=== ${p.label||('Trang '+p.num)} ===\n\n${p.text}`).join('\n\n');
+    dlBlob(new Blob([c],{type:'text/plain;charset=utf-8'}), baseName+'_latex.txt');
+  };
+}
+
+function showError(area, msg) {
+  setStatus('Lỗi: '+msg, 'err');
+  log('Lỗi: '+msg, 'err');
+  const el = document.createElement('div');
+  el.style.cssText='background:rgba(240,112,112,.1);border:1px solid rgba(240,112,112,.3);border-radius:10px;padding:1rem;color:var(--err);font-size:.85rem;line-height:1.7';
+  el.innerHTML=`❌ <strong>${escHtml(msg)}</strong><br><br><span style="color:var(--muted);font-size:.78rem">Kiểm tra:<br>• API key đúng? (sk-ant-...)<br>• Base URL: <code>${escHtml(getBaseUrl())}</code></span>`;
+  area.insertBefore(el, area.firstChild);
+  setTimeout(()=>setProgress(0), 500);
+}
+
+// init
+switchMode('pdf');
+</script>
+</body>
+</html>
